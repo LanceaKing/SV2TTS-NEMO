@@ -205,21 +205,15 @@ def main(cfg):
 
 
 def fill_pretrained_modules(model, cfg):
-    module_file = cfg.get('text_embedding', None)
-    if module_file is not None:
-        model.text_embedding.load_state_dict(torch.load(module_file))
-        for param in model.text_embedding.parameters():
-            param.requires_grad = False
-        model.text_embedding.eval()
-
-    module_names = ['encoder', 'postnet']
+    model.freeze()
+    module_names = ['text_embedding', 'encoder', 'postnet']
     for name in module_names:
         module_file = cfg.get(name, None)
         if module_file is None:
             continue
         module = getattr(model, name)
         module.load_state_dict(torch.load(module_file))
-        module.freeze()
+    model.decoder.unfreeze()
     return model
 
 
