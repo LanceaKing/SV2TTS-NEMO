@@ -23,7 +23,7 @@ class SV2TTSModel(Tacotron2Model):
             return {
                 "tokens": NeuralType(('B', 'T'), EmbeddedTextType()),
                 "token_len": NeuralType(('B'), LengthsType()),
-                "emb": NeuralType(('B', 'D'), AcousticEncodedRepresentation()),
+                "speaker_embedding": NeuralType(('B', 'D'), AcousticEncodedRepresentation()),
                 "audio": NeuralType(('B', 'T'), AudioSignal()),
                 "audio_len": NeuralType(('B'), LengthsType()),
             }
@@ -31,18 +31,18 @@ class SV2TTSModel(Tacotron2Model):
             return {
                 "tokens": NeuralType(('B', 'T'), EmbeddedTextType()),
                 "token_len": NeuralType(('B'), LengthsType()),
-                "emb": NeuralType(('B', 'D'), AcousticEncodedRepresentation()),
+                "speaker_embedding": NeuralType(('B', 'D'), AcousticEncodedRepresentation()),
                 "audio": NeuralType(('B', 'T'), AudioSignal(), optional=True),
                 "audio_len": NeuralType(('B'), LengthsType(), optional=True),
             }
 
     @typecheck()
-    def forward(self, *, tokens, token_len, emb, audio=None, audio_len=None):
+    def forward(self, *, tokens, token_len, speaker_embedding, audio=None, audio_len=None):
         if audio is not None and audio_len is not None:
             spec_target, spec_target_len = self.audio_to_melspec_precessor(audio, audio_len)
         token_embedding = self.text_embedding(tokens).transpose(1, 2)
         encoder_embedding = self.encoder(token_embedding=token_embedding, token_len=token_len)
-        encoder_embedding = self.concatenate_speaker_embedding(encoder_embedding, emb)
+        encoder_embedding = self.concatenate_speaker_embedding(encoder_embedding, speaker_embedding)
         if self.training:
             spec_pred_dec, gate_pred, alignments = self.decoder(
                 memory=encoder_embedding, decoder_inputs=spec_target, memory_lengths=token_len
@@ -67,7 +67,7 @@ class SV2TTSModel(Tacotron2Model):
     @typecheck(
         input_types={
             "tokens": NeuralType(('B', 'T'), EmbeddedTextType()),
-            "emb": NeuralType(('B', 'D'), AcousticEncodedRepresentation()),
+            "speaker_embedding": NeuralType(('B', 'D'), AcousticEncodedRepresentation()),
         },
         output_types={"spec": NeuralType(('B', 'D', 'T'), MelSpectrogramType())},
     )
@@ -149,6 +149,12 @@ class SV2TTSDataset(AudioToCharDataset):
 
     def _collate_fn(self, batch):
         return _speech_collate_fn(batch, pad_id=self.manifest_processor.pad_id)
+
+    @property
+    def output_types(self):
+        output_types = super().output_types
+        output_types['speaker_embedding'] = NeuralType(('B', 'D'), AcousticEncodedRepresentation())
+        return output_types
 
 
 def _speech_collate_fn(batch, pad_id):

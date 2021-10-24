@@ -53,10 +53,10 @@ except ImportError:
         yield
 
 
-def get_embeddings(speaker_model, manifest_file, batch_size=1, embedding_dir='./', device='cuda'):
+def get_embeddings(speaker_model, speaker_manifest_file, text_manifest_file, batch_size=1, embedding_dir='./', device='cuda'):
     test_config = OmegaConf.create(
         dict(
-            manifest_filepath=str(manifest_file),
+            manifest_filepath=str(speaker_manifest_file),
             sample_rate=16000,
             labels=None,
             batch_size=batch_size,
@@ -84,13 +84,11 @@ def get_embeddings(speaker_model, manifest_file, batch_size=1, embedding_dir='./
 
     all_embs = np.asarray(all_embs)
     all_embs = embedding_normalize(all_embs)
-    with manifest_file.open() as manifest:
-        for i, line in enumerate(manifest.readlines()):
-            line = line.strip()
+    with text_manifest_file.open() as text_manifest:
+        for i, line in enumerate(text_manifest.readlines()):
             dic = json.loads(line)
             p = Path(dic['audio_filepath'])
-            parts = p.relative_to(p.parents[2]).parts
-            parts[1] = parts[1].replace('-speaker', '-text')
+            parts = list(p.relative_to(p.parents[2]).parts)
             uniq_name = '@'.join(parts)
             out_embeddings[uniq_name] = all_embs[i]
 
@@ -98,7 +96,7 @@ def get_embeddings(speaker_model, manifest_file, batch_size=1, embedding_dir='./
     if not embedding_dir.exists():
         embedding_dir.mkdir(parents=True, exist_ok=True)
 
-    prefix = manifest_file.stem
+    prefix = speaker_manifest_file.stem
 
     embeddings_file = embedding_dir / (prefix + '_embeddings.pkl')
     pkl.dump(out_embeddings, embeddings_file.open('wb'))
@@ -108,7 +106,10 @@ def get_embeddings(speaker_model, manifest_file, batch_size=1, embedding_dir='./
 def main():
     parser = ArgumentParser()
     parser.add_argument(
-        "--manifest", type=Path, required=True, help="Path to manifest file",
+        "--speaker_manifest", type=Path, required=True, help="Path to speaker manifest file",
+    )
+    parser.add_argument(
+        "--text_manifest", type=Path, required=True, help="Path to text manifest file",
     )
     parser.add_argument(
         "--model_path",
@@ -141,7 +142,7 @@ def main():
         device = 'cpu'
         logging.warning("Running model on CPU, for faster performance it is adviced to use atleast one NVIDIA GPUs")
 
-    get_embeddings(speaker_model, args.manifest, batch_size=32, embedding_dir=args.embedding_dir, device=device)
+    get_embeddings(speaker_model, args.speaker_manifest, args.text_manifest, batch_size=32, embedding_dir=args.embedding_dir, device=device)
 
 
 if __name__ == '__main__':
