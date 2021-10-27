@@ -19,25 +19,12 @@ class SV2TTSModel(Tacotron2Model):
 
     @property
     def input_types(self):
-        if self.training:
-            return {
-                "tokens": NeuralType(('B', 'T'), EmbeddedTextType()),
-                "token_len": NeuralType(('B'), LengthsType()),
-                "speaker_embedding": NeuralType(('B', 'D'), AcousticEncodedRepresentation()),
-                "audio": NeuralType(('B', 'T'), AudioSignal()),
-                "audio_len": NeuralType(('B'), LengthsType()),
-            }
-        else:
-            return {
-                "tokens": NeuralType(('B', 'T'), EmbeddedTextType()),
-                "token_len": NeuralType(('B'), LengthsType()),
-                "speaker_embedding": NeuralType(('B', 'D'), AcousticEncodedRepresentation()),
-                "audio": NeuralType(('B', 'T'), AudioSignal(), optional=True),
-                "audio_len": NeuralType(('B'), LengthsType(), optional=True),
-            }
+        input_types = super().input_types
+        input_types['speaker_embedding'] = NeuralType(('B', 'D'), AcousticEncodedRepresentation())
+        return input_types
 
     @typecheck()
-    def forward(self, *, tokens, token_len, speaker_embedding, audio=None, audio_len=None):
+    def forward(self, *, speaker_embedding, tokens, token_len, audio=None, audio_len=None):
         if audio is not None and audio_len is not None:
             spec_target, spec_target_len = self.audio_to_melspec_precessor(audio, audio_len)
         token_embedding = self.text_embedding(tokens).transpose(1, 2)
@@ -135,8 +122,8 @@ class SV2TTSModel(Tacotron2Model):
 
 class SV2TTSDataset(AudioToCharDataset):
 
-    def __init__(self, embs_filepath, *args, **kwargs):
-        with open(embs_filepath, 'rb') as f:
+    def __init__(self, speaker_embeddings_filepath, *args, **kwargs):
+        with open(speaker_embeddings_filepath, 'rb') as f:
             self.speaker_embeddings = pkl.load(f)
         super().__init__(*args, **kwargs)
 
@@ -190,32 +177,3 @@ def _speech_collate_fn(batch, pad_id):
     speaker_embeddings = torch.stack(speaker_embeddings)
 
     return audio_signal, audio_lengths, tokens, tokens_lengths, speaker_embeddings
-
-
-@hydra_runner(config_name='sv2tts')
-def main(cfg):
-    trainer = pl.Trainer(**cfg.trainer)
-    exp_manager(trainer, cfg.get('exp_manager', None))
-    model = SV2TTSModel(cfg=cfg.model, trainer=trainer)
-    model = fill_pretrained_modules(model, cfg.pretrained_modules)
-    lr_logger = pl.callbacks.LearningRateMonitor()
-    epoch_time_logger = LogEpochTimeCallback()
-    trainer.callbacks.extend([lr_logger, epoch_time_logger])
-    trainer.fit(model)
-
-
-def fill_pretrained_modules(model, cfg):
-    model.freeze()
-    module_names = ['text_embedding', 'encoder', 'postnet']
-    for name in module_names:
-        module_file = cfg.get(name, None)
-        if module_file is None:
-            continue
-        module = getattr(model, name)
-        module.load_state_dict(torch.load(module_file))
-    model.decoder.unfreeze()
-    return model
-
-
-if __name__ == '__main__':
-    main()
