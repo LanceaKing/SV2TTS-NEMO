@@ -6,9 +6,9 @@ from nemo.collections.asr.data.audio_to_text import AudioToCharDataset
 from nemo.collections.tts.helpers.helpers import get_mask_from_lengths
 from nemo.collections.tts.models import Tacotron2Model
 from nemo.core import typecheck
-from nemo.core.neural_types import (AcousticEncodedRepresentation, AudioSignal,
-                                    EmbeddedTextType, LengthsType,
-                                    MelSpectrogramType, NeuralType)
+from nemo.core.neural_types import (AcousticEncodedRepresentation,
+                                    EmbeddedTextType, MelSpectrogramType,
+                                    NeuralType)
 
 
 class SV2TTSModel(Tacotron2Model):

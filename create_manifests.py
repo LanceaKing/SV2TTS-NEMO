@@ -22,9 +22,8 @@ from pathlib import Path
 
 import sox
 import wget
-from tqdm import tqdm
-
 from nemo.collections.common.parts.preprocessing import parsers
+from tqdm import tqdm
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--ljspeech_base', required=True, default=None, type=Path)

@@ -1,7 +1,9 @@
 import pytorch_lightning as pl
+import torch
+from nemo.collections.common.callbacks import LogEpochTimeCallback
 from nemo.core.config import hydra_runner
 from nemo.utils.exp_manager import exp_manager
-from nemo.collections.common.callbacks import LogEpochTimeCallback
+
 from sv2tts import SV2TTSModel
 
 
