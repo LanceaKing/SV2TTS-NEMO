@@ -1,18 +1,14 @@
 import pickle as pkl
 from pathlib import Path
 
-import pytorch_lightning as pl
 import torch
 from nemo.collections.asr.data.audio_to_text import AudioToCharDataset
-from nemo.collections.common.callbacks import LogEpochTimeCallback
 from nemo.collections.tts.helpers.helpers import get_mask_from_lengths
 from nemo.collections.tts.models import Tacotron2Model
 from nemo.core import typecheck
-from nemo.core.config import hydra_runner
 from nemo.core.neural_types import (AcousticEncodedRepresentation, AudioSignal,
                                     EmbeddedTextType, LengthsType,
                                     MelSpectrogramType, NeuralType)
-from nemo.utils.exp_manager import exp_manager
 
 
 class SV2TTSModel(Tacotron2Model):
