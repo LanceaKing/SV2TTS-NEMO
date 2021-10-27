@@ -1,6 +1,6 @@
 import pytorch_lightning as pl
-import torch
 from nemo.collections.common.callbacks import LogEpochTimeCallback
+from nemo.collections.tts.models import Tacotron2Model
 from nemo.core.config import hydra_runner
 from nemo.utils.exp_manager import exp_manager
 
@@ -19,15 +19,14 @@ def main(cfg):
     trainer.fit(model)
 
 
-def fill_pretrained_modules(model, cfg):
-    model.freeze()
+def fill_pretrained_modules(model):
+    pretrained = Tacotron2Model.from_pretrained('tts_en_tacotron2')
     module_names = ['text_embedding', 'encoder', 'postnet']
     for name in module_names:
-        module_file = cfg.get(name, None)
-        if module_file is None:
-            continue
-        module = getattr(model, name)
-        module.load_state_dict(torch.load(module_file))
+        src = getattr(pretrained, name)
+        dst = getattr(model, name)
+        dst.load_state_dict(src.state_dict())
+    model.freeze()
     model.decoder.unfreeze()
     return model
 

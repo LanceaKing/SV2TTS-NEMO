@@ -14,10 +14,6 @@ train_dataset: ???
 validation_datasets: ???
 train_embeddings: ???
 validation_embeddings: ???
-pretrained_modules:
-  text_embedding: ???
-  encoder: ???
-  postnet: ???
 
 model:
   labels: ${labels}
