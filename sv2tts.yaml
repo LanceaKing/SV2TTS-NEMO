@@ -22,7 +22,7 @@ model:
       _target_: sv2tts.SV2TTSDataset
       speaker_embeddings_filepath: ${train_embeddings}
       manifest_filepath: ${train_dataset}
-      max_duration: null
+      max_duration: 11.0
       min_duration: 0.1
       trim: false
       int_values: false
@@ -34,7 +34,7 @@ model:
     dataloader_params:
       drop_last: false
       shuffle: true
-      batch_size: 32
+      batch_size: 48
       num_workers: 4
 
 
@@ -43,7 +43,7 @@ model:
       _target_: sv2tts.SV2TTSDataset
       speaker_embeddings_filepath: ${validation_embeddings}
       manifest_filepath: ${validation_datasets}
-      max_duration: null
+      max_duration: 11
       min_duration: 0.1
       int_values: false
       normalize: true
@@ -55,7 +55,7 @@ model:
     dataloader_params:
       drop_last: false
       shuffle: false
-      batch_size: 32
+      batch_size: 48
       num_workers: 8
 
   preprocessor:
@@ -135,8 +135,8 @@ trainer:
   logger: False  # Provided by exp_manager
   gradient_clip_val: 1.0
   flush_logs_every_n_steps: 1000
-  log_every_n_steps: 100
-  check_val_every_n_epoch: 5
+  log_every_n_steps: 200
+  check_val_every_n_epoch: 25
 
 exp_manager:
   exp_dir: null
