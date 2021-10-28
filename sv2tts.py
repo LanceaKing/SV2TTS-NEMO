@@ -126,8 +126,7 @@ class SV2TTSDataset(AudioToCharDataset):
     def __getitem__(self, index):
         output = super().__getitem__(index)
         sample = self.manifest_processor.collection[index]
-        p = Path(sample.audio_file)
-        uniq_name = '@'.join(p.relative_to(p.parents[2]).parts)
+        uniq_name = '@'.join(sample.audio_file.split('/')[-3:])
         return *output, torch.from_numpy(self.speaker_embeddings[uniq_name])
 
     def _collate_fn(self, batch):

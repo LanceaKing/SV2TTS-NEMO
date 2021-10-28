@@ -34,7 +34,7 @@ model:
     dataloader_params:
       drop_last: false
       shuffle: true
-      batch_size: 48
+      batch_size: 32
       num_workers: 4
 
 
@@ -55,7 +55,7 @@ model:
     dataloader_params:
       drop_last: false
       shuffle: false
-      batch_size: 48
+      batch_size: 32
       num_workers: 8
 
   preprocessor:
@@ -135,8 +135,8 @@ trainer:
   logger: False  # Provided by exp_manager
   gradient_clip_val: 1.0
   flush_logs_every_n_steps: 1000
-  log_every_n_steps: 200
-  check_val_every_n_epoch: 25
+  log_every_n_steps: 100
+  check_val_every_n_epoch: 5
 
 exp_manager:
   exp_dir: null

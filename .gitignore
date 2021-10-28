@@ -1,6 +1,4 @@
-/data
-/embeddings
-/modules
+/prepare
 /nemo_experiments
 
 # Byte-compiled / optimized / DLL files
