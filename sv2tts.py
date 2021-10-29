@@ -124,11 +124,46 @@ class SV2TTSLoss(Tacotron2Loss):
 
     @typecheck()
     def forward(self, *, spec_pred_dec, spec_pred_postnet, gate_pred, spec_target, spec_target_len, pad_value):
-        loss, gate_target = super().forward(spec_pred_dec=spec_pred_dec, spec_pred_postnet=spec_pred_postnet,
-                               gate_pred=gate_pred, spec_target=spec_target,
-                               spec_target_len=spec_target_len, pad_value=pad_value)
-        loss += torch.nn.functional.l1_loss(spec_pred_dec, spec_target)
-        return loss, gate_target
+        # Make the gate target
+        max_len = spec_target.shape[2]
+        gate_target = torch.zeros(spec_target_len.shape[0], max_len)
+        gate_target = gate_target.type_as(gate_pred)
+        for i, length in enumerate(spec_target_len):
+            gate_target[i, length.data - 1 :] = 1
+
+        spec_target.requires_grad = False
+        gate_target.requires_grad = False
+        gate_target = gate_target.view(-1, 1)
+
+        max_len = spec_target.shape[2]
+
+        if max_len < spec_pred_dec.shape[2]:
+            # Predicted len is larger than reference
+            # Need to slice
+            spec_pred_dec = spec_pred_dec.narrow(2, 0, max_len)
+            spec_pred_postnet = spec_pred_postnet.narrow(2, 0, max_len)
+            gate_pred = gate_pred.narrow(1, 0, max_len).contiguous()
+        elif max_len > spec_pred_dec.shape[2]:
+            # Need to do padding
+            pad_amount = max_len - spec_pred_dec.shape[2]
+            spec_pred_dec = torch.nn.functional.pad(spec_pred_dec, (0, pad_amount), value=pad_value)
+            spec_pred_postnet = torch.nn.functional.pad(spec_pred_postnet, (0, pad_amount), value=pad_value)
+            gate_pred = torch.nn.functional.pad(gate_pred, (0, pad_amount), value=1e3)
+            max_len = spec_pred_dec.shape[2]
+
+        mask = ~get_mask_from_lengths(spec_target_len, max_len=max_len)
+        mask = mask.expand(spec_target.shape[1], mask.size(0), mask.size(1))
+        mask = mask.permute(1, 0, 2)
+        spec_pred_dec.data.masked_fill_(mask, pad_value)
+        spec_pred_postnet.data.masked_fill_(mask, pad_value)
+        gate_pred.data.masked_fill_(mask[:, 0, :], 1e3)
+
+        gate_pred = gate_pred.view(-1, 1)
+        rnn_mel_loss = torch.nn.functional.mse_loss(spec_pred_dec, spec_target)
+        rnn_mel_loss += torch.nn.functional.l1_loss(spec_pred_dec, spec_target)
+        postnet_mel_loss = torch.nn.functional.mse_loss(spec_pred_postnet, spec_target)
+        gate_loss = torch.nn.functional.binary_cross_entropy_with_logits(gate_pred, gate_target)
+        return rnn_mel_loss + postnet_mel_loss + gate_loss, gate_target
 
 
 class SV2TTSDataset(AudioToCharDataset):
