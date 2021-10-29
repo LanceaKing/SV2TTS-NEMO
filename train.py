@@ -12,7 +12,7 @@ def main(cfg):
     trainer = pl.Trainer(**cfg.trainer)
     exp_manager(trainer, cfg.get('exp_manager', None))
     model = SV2TTSModel(cfg=cfg.model, trainer=trainer)
-    model = fill_pretrained_modules(model)
+#     model = fill_pretrained_modules(model)
     lr_logger = pl.callbacks.LearningRateMonitor()
     epoch_time_logger = LogEpochTimeCallback()
     trainer.callbacks.extend([lr_logger, epoch_time_logger])
