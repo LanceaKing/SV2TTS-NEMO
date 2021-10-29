@@ -43,7 +43,7 @@ model:
       _target_: sv2tts.SV2TTSDataset
       speaker_embeddings_filepath: ${validation_embeddings}
       manifest_filepath: ${validation_datasets}
-      max_duration: 11
+      max_duration: 11.0
       min_duration: 0.1
       int_values: false
       normalize: true

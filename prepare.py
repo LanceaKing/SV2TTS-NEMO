@@ -11,15 +11,13 @@ def manifest_join_base(base, manifest_file, output_file):
     with open(manifest_file, 'r') as manifest, open(output_file, 'w') as fout:
         for line in manifest:
             entry = json.loads(line)
-            if entry['duration'] > 11.0:
-                continue
             entry['audio_filepath'] = posixpath.join(base, entry['audio_filepath'])
             fout.write(json.dumps(entry) + '\n')
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--input-dir', required=True, type=str)
+    parser.add_argument('-i', '--input-dir', required=True, type=str)
     args = parser.parse_args()
 
     prepare_dir = 'prepare'
