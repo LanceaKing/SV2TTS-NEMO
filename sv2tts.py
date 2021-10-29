@@ -1,9 +1,9 @@
 import pickle as pkl
-from pathlib import Path
 
 import torch
 from nemo.collections.asr.data.audio_to_text import AudioToCharDataset
 from nemo.collections.tts.helpers.helpers import get_mask_from_lengths
+from nemo.collections.tts.losses.tacotron2loss import Tacotron2Loss
 from nemo.collections.tts.models import Tacotron2Model
 from nemo.core import typecheck
 from nemo.core.neural_types import (AcousticEncodedRepresentation,
@@ -12,6 +12,10 @@ from nemo.core.neural_types import (AcousticEncodedRepresentation,
 
 
 class SV2TTSModel(Tacotron2Model):
+
+    def __init__(self, cfg, trainer):
+        super().__init__(cfg, trainer=trainer)
+        self.loss = SV2TTSLoss()
 
     @property
     def input_types(self):
@@ -114,6 +118,17 @@ class SV2TTSModel(Tacotron2Model):
             "gate_target": gate_target,
             "alignments": alignments,
         }
+
+
+class SV2TTSLoss(Tacotron2Loss):
+
+    @typecheck()
+    def forward(self, *, spec_pred_dec, spec_pred_postnet, gate_pred, spec_target, spec_target_len, pad_value):
+        loss, gate_target = super().forward(spec_pred_dec=spec_pred_dec, spec_pred_postnet=spec_pred_postnet,
+                               gate_pred=gate_pred, spec_target=spec_target,
+                               spec_target_len=spec_target_len, pad_value=pad_value)
+        loss += torch.nn.functional.l1_loss(spec_pred_dec, spec_target)
+        return loss, gate_target
 
 
 class SV2TTSDataset(AudioToCharDataset):

@@ -12,7 +12,7 @@ def main(cfg):
     trainer = pl.Trainer(**cfg.trainer)
     exp_manager(trainer, cfg.get('exp_manager', None))
     model = SV2TTSModel(cfg=cfg.model, trainer=trainer)
-#     model = fill_pretrained_modules(model)
+    model = fill_pretrained_modules(model)
     lr_logger = pl.callbacks.LearningRateMonitor()
     epoch_time_logger = LogEpochTimeCallback()
     trainer.callbacks.extend([lr_logger, epoch_time_logger])
@@ -20,7 +20,7 @@ def main(cfg):
 
 
 def fill_pretrained_modules(model):
-    restored_model = Tacotron2Model.from_pretrained('tts_en_tacotron2', map_location='cpu', strict=True)
+    restored_model = Tacotron2Model.from_pretrained('tts_en_tacotron2', strict=True)
     for name in ['text_embedding', 'encoder', 'postnet']:
         src = getattr(restored_model, name)
         dst = getattr(model, name)
