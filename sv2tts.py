@@ -13,7 +13,7 @@ from nemo.core.neural_types import (AcousticEncodedRepresentation,
 
 class SV2TTSModel(Tacotron2Model):
 
-    def __init__(self, cfg, trainer):
+    def __init__(self, cfg, trainer=None):
         super().__init__(cfg, trainer=trainer)
         self.loss = SV2TTSLoss()
 
@@ -46,6 +46,7 @@ class SV2TTSModel(Tacotron2Model):
 
     @staticmethod
     def concatenate_speaker_embedding(encoder_embedding, speaker_embedding):
+        # concatenate speaker embedding with the synthesizer encoder output at each time step
         speaker_embedding = speaker_embedding.unsqueeze(1)
         speaker_embedding = speaker_embedding.repeat(1, encoder_embedding.size(1), 1)
         encoder_embedding = torch.cat((encoder_embedding, speaker_embedding), dim=2)
@@ -53,12 +54,12 @@ class SV2TTSModel(Tacotron2Model):
 
     @typecheck(
         input_types={
-            "tokens": NeuralType(('B', 'T'), EmbeddedTextType()),
-            "speaker_embedding": NeuralType(('B', 'D'), AcousticEncodedRepresentation()),
+            'speaker_embedding': NeuralType(('B', 'D'), AcousticEncodedRepresentation()),
+            'tokens': NeuralType(('B', 'T'), EmbeddedTextType()),
         },
-        output_types={"spec": NeuralType(('B', 'D', 'T'), MelSpectrogramType())},
+        output_types={'spec': NeuralType(('B', 'D', 'T'), MelSpectrogramType())},
     )
-    def generate_spectrogram(self, *, tokens, speaker_embedding):
+    def generate_spectrogram(self, *, speaker_embedding, tokens):
         self.eval()
         self.calculate_loss = False
         token_len = torch.tensor([len(i) for i in tokens]).to(self.device)
@@ -111,12 +112,12 @@ class SV2TTSModel(Tacotron2Model):
             pad_value=self.pad_value,
         )
         return {
-            "val_loss": loss,
-            "mel_target": spec_target,
-            "mel_postnet": spec_pred_postnet,
-            "gate": gate_pred,
-            "gate_target": gate_target,
-            "alignments": alignments,
+            'val_loss': loss,
+            'mel_target': spec_target,
+            'mel_postnet': spec_pred_postnet,
+            'gate': gate_pred,
+            'gate_target': gate_target,
+            'alignments': alignments,
         }
 
 
@@ -160,6 +161,7 @@ class SV2TTSLoss(Tacotron2Loss):
 
         gate_pred = gate_pred.view(-1, 1)
         rnn_mel_loss = torch.nn.functional.mse_loss(spec_pred_dec, spec_target)
+        # extend with an additional L1 loss
         rnn_mel_loss += torch.nn.functional.l1_loss(spec_pred_dec, spec_target)
         postnet_mel_loss = torch.nn.functional.mse_loss(spec_pred_postnet, spec_target)
         gate_loss = torch.nn.functional.binary_cross_entropy_with_logits(gate_pred, gate_target)
