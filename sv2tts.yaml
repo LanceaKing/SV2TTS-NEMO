@@ -26,8 +26,9 @@ model:
       min_duration: 0.1
       trim: false
       int_values: false
-      normalize: true
+      normalize: false
       sample_rate: ${sample_rate}
+      parser: base
       # bos_id: 66
       # eos_id: 67
       # pad_id: 68  These parameters are added automatically in Tacotron2
@@ -45,10 +46,11 @@ model:
       manifest_filepath: ${validation_datasets}
       max_duration: 16.0
       min_duration: 0.1
-      int_values: false
-      normalize: true
-      sample_rate: ${sample_rate}
       trim: false
+      int_values: false
+      normalize: false
+      sample_rate: ${sample_rate}
+      parser: base
       # bos_id: 66
       # eos_id: 67
       # pad_id: 68  These parameters are added automatically in Tacotron2
