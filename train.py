@@ -1,4 +1,3 @@
-import os
 import torch
 import pytorch_lightning as pl
 from nemo.collections.common.callbacks import LogEpochTimeCallback
@@ -9,7 +8,7 @@ from nemo.utils.exp_manager import exp_manager
 from sv2tts import SV2TTSModel
 
 
-@hydra_runner(config_name='sv2tts')
+@hydra_runner(config_path='conf', config_name='sv2tts')
 def main(cfg):
     trainer = pl.Trainer(**cfg.trainer)
     exp_manager(trainer, cfg.get('exp_manager', None))
